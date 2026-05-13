@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Create a new event on EventHub.">
+  <title>EventHub — Create Event</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%238b5cf6%22/><text x=%2250%22 y=%2270%22 font-size=%2260%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22bold%22>E</text></svg>">
+</head>
+<body>
+  <div class="app-layout" id="app">
+    <main class="main-content">
+      <div class="page-header">
+        <div><h1>Create Event</h1><p>Fill in the details to create a new event.</p></div>
+        <a href="/dashboard.html" class="btn btn-secondary">← Back</a>
+      </div>
+
+      <form id="eventForm" onsubmit="handleCreate(event)">
+        <div class="card" style="margin-bottom:24px">
+          <h2 class="section-title">📋 Event Information</h2>
+          <div class="form-group">
+            <label for="title">Event Title *</label>
+            <input type="text" id="title" class="form-input" placeholder="Tech Conference 2026" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="start_time">Start Date & Time *</label>
+              <input type="datetime-local" id="start_time" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label for="end_time">End Date & Time *</label>
+              <input type="datetime-local" id="end_time" class="form-input" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="capacity">Capacity</label>
+              <input type="number" id="capacity" class="form-input" value="100" min="1">
+            </div>
+            <div class="form-group">
+              <label for="status">Status</label>
+              <select id="status" class="form-input">
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:24px">
+          <h2 class="section-title">📍 Location</h2>
+          <div class="form-group">
+            <label for="location_id">Select Existing Location</label>
+            <select id="location_id" class="form-input">
+              <option value="">— Create New Location Below —</option>
+            </select>
+          </div>
+          <div id="new-location-fields">
+            <div class="form-group">
+              <label for="venue_name">Venue Name</label>
+              <input type="text" id="venue_name" class="form-input" placeholder="Grand Convention Center">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="address">Address</label>
+                <input type="text" id="address" class="form-input" placeholder="123 Main Street">
+              </div>
+              <div class="form-group">
+                <label for="city">City *</label>
+                <input type="text" id="city" class="form-input" placeholder="Mumbai">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="state">State</label>
+                <input type="text" id="state" class="form-input" placeholder="Maharashtra">
+              </div>
+              <div class="form-group">
+                <label for="zip_code">Zip Code</label>
+                <input type="text" id="zip_code" class="form-input" placeholder="400001">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:24px">
+          <h2 class="section-title">🎯 Event Details</h2>
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" class="form-input" placeholder="Tell people what your event is about..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="category">Category</label>
+              <select id="category" class="form-input">
+                <option value="conference">Conference</option>
+                <option value="workshop">Workshop</option>
+                <option value="meetup">Meetup</option>
+                <option value="concert">Concert</option>
+                <option value="sports">Sports</option>
+                <option value="webinar">Webinar</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="tags">Tags (comma separated)</label>
+              <input type="text" id="tags" class="form-input" placeholder="tech, networking, AI">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="is_paid">Ticket Type</label>
+              <select id="is_paid" class="form-input" onchange="document.getElementById('ticket_price').disabled = this.value==='0'">
+                <option value="0">Free</option>
+                <option value="1">Paid</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="ticket_price">Ticket Price (₹)</label>
+              <input type="number" id="ticket_price" class="form-input" value="0" min="0" step="0.01" disabled>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="banner_url">Banner Image URL (optional)</label>
+            <input type="url" id="banner_url" class="form-input" placeholder="https://example.com/banner.jpg">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submit-btn" style="padding:14px 40px">🚀 Create Event</button>
+      </form>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    async function init() {
+      if (!initPage('create-event')) return;
+      // Load locations
+      try {
+        const locs = await API.getLocations();
+        const sel = document.getElementById('location_id');
+        locs.forEach(l => {
+          const opt = document.createElement('option');
+          opt.value = l.id;
+          opt.textContent = `${l.venue_name} — ${l.city}`;
+          sel.appendChild(opt);
+        });
+      } catch (e) { console.warn(e); }
+
+      document.getElementById('location_id').addEventListener('change', function() {
+        document.getElementById('new-location-fields').style.display = this.value ? 'none' : 'block';
+      });
+    }
+
+    async function handleCreate(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true; btn.textContent = 'Creating...';
+
+      try {
+        let locationId = document.getElementById('location_id').value;
+        if (!locationId) {
+          const vn = document.getElementById('venue_name').value;
+          const ct = document.getElementById('city').value;
+          if (!vn || !ct) { alert('Venue name and city are required for a new location'); btn.disabled = false; btn.textContent = '🚀 Create Event'; return; }
+          const loc = await API.createLocation({
+            venue_name: vn, address: document.getElementById('address').value,
+            city: ct, state: document.getElementById('state').value, zip_code: document.getElementById('zip_code').value
+          });
+          locationId = loc.id;
+        }
+
+        await API.createEvent({
+          title: document.getElementById('title').value,
+          location_id: locationId,
+          start_time: document.getElementById('start_time').value,
+          end_time: document.getElementById('end_time').value,
+          capacity: parseInt(document.getElementById('capacity').value),
+          status: document.getElementById('status').value,
+          description: document.getElementById('description').value,
+          category: document.getElementById('category').value,
+          tags: document.getElementById('tags').value,
+          is_paid: document.getElementById('is_paid').value === '1',
+          ticket_price: parseFloat(document.getElementById('ticket_price').value) || 0,
+          banner_url: document.getElementById('banner_url').value,
+        });
+        showToast('Event created successfully!', 'success');
+        setTimeout(() => window.location.href = '/dashboard.html', 1000);
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.disabled = false; btn.textContent = '🚀 Create Event';
+      }
+    }
+    init();
+  </script>
+</body>
+</html>

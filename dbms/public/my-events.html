@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="View all events you have RSVP'd to on EventHub.">
+  <title>EventHub — My RSVPs</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%238b5cf6%22/><text x=%2250%22 y=%2270%22 font-size=%2260%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22bold%22>E</text></svg>">
+</head>
+<body>
+  <div class="app-layout" id="app">
+    <main class="main-content">
+      <div class="page-header">
+        <div><h1>My RSVPs</h1><p>Events you've registered for</p></div>
+        <a href="/dashboard.html" class="btn btn-secondary">← Dashboard</a>
+      </div>
+      <div id="my-events-list"></div>
+    </main>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    async function loadMyEvents() {
+      if (!initPage('my-events')) return;
+      const container = document.getElementById('my-events-list');
+      showLoading(container);
+
+      try {
+        const user = getUser();
+        const events = await API.getUserEvents(user.id);
+        if (!events.length) {
+          showEmpty(container, '🎟️', 'No RSVPs yet', 'Browse events and RSVP to get started!',
+            '<a href="/dashboard.html" class="btn btn-primary btn-sm">Browse Events</a>');
+          return;
+        }
+        container.innerHTML = `<div class="table-wrapper"><table>
+          <thead><tr><th>Event</th><th>Date</th><th>Venue</th><th>Category</th><th>Ticket</th><th>Capacity</th><th>RSVP Status</th><th>Actions</th></tr></thead>
+          <tbody>${events.map(e => {
+            const pct = e.capacity > 0 ? Math.round((e.confirmed_count / e.capacity) * 100) : 0;
+            return `<tr>
+              <td><a href="/event.html?id=${e.id}" style="font-weight:600">${e.title}</a><br><span class="badge badge-${e.status}" style="margin-top:4px">${e.status}</span></td>
+              <td>${formatDate(e.start_time)}<br><span style="font-size:12px;color:var(--text-muted)">${formatTime(e.start_time)}</span></td>
+              <td>${e.venue_name}<br><span style="font-size:12px;color:var(--text-muted)">${e.city}</span></td>
+              <td><span class="badge badge-category">${e.category || 'other'}</span></td>
+              <td><span class="badge badge-${e.is_paid?'paid':'free'}">${e.is_paid ? '₹'+e.ticket_price : 'Free'}</span></td>
+              <td>
+                <div style="font-size:13px;margin-bottom:4px">${e.confirmed_count}/${e.capacity}</div>
+                <div class="progress-bar" style="width:80px"><div class="progress-fill" style="width:${pct}%"></div></div>
+              </td>
+              <td><span class="badge badge-${e.rsvp_status}">${e.rsvp_status}</span></td>
+              <td>${e.rsvp_status !== 'cancelled' ? `<button class="btn btn-danger btn-sm" onclick="cancelMyRsvp(${e.id})">Cancel</button>` : '<span style="color:var(--text-muted);font-size:12px">Cancelled</span>'}</td>
+            </tr>`;
+          }).join('')}</tbody></table></div>`;
+      } catch (err) {
+        showEmpty(container, '⚠️', 'Error', err.message);
+      }
+    }
+
+    async function cancelMyRsvp(eventId) {
+      if (!confirm('Cancel your RSVP for this event?')) return;
+      try {
+        await API.updateRsvp(eventId, 'cancelled');
+        showToast('RSVP cancelled', 'info');
+        loadMyEvents();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    loadMyEvents();
+  </script>
+</body>
+</html>
