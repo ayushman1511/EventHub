@@ -2,6 +2,8 @@
 
 A professional, full-stack Event Management Application with a premium UI, robust role-based access control, and a seamless user experience.
 
+this was my first experience with AntiGravity and im absolutely awstruck with the result i think i can make wayy wayy better things with it
+
 ## Features ✨
 
 ### Visual Polish & UI/UX
